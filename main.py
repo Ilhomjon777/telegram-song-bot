@@ -18,11 +18,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # YouTube audio va videosini yuklab olish
 async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     url = update.message.text
-    await update.message.reply_text(f"⏳ Yuklab olish boshlandi: {url}")
+    await update.message.reply_text(f"Yuklab olish boshlandi: {url}")
 
     audio_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'audio.mp3',
+        'outtmpl': 'audio.%(ext)s',
         'noplaylist': True,
         'quiet': True,
         'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}],
@@ -30,33 +30,28 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     video_opts = {
         'format': 'bestvideo+bestaudio/best',
-        'outtmpl': 'video.mp4',
+        'outtmpl': 'video.%(ext)s',
         'noplaylist': True,
         'quiet': True,
     }
 
     try:
-        # Audio yuklab olish
         with yt_dlp.YoutubeDL(audio_opts) as ydl:
             ydl.download([url])
+        audio_path = "audio.mp3"
 
-        # Video yuklab olish
         with yt_dlp.YoutubeDL(video_opts) as ydl:
             ydl.download([url])
+        video_path = "video.mp4"
 
-        # Foydalanuvchiga fayllarni jo‘natish
-        await update.message.reply_audio(audio=open("audio.mp3", 'rb'))
-        await update.message.reply_video(video=open("video.mp4", 'rb'))
+        await update.message.reply_audio(audio=open(audio_path, 'rb'))
+        await update.message.reply_video(video=open(video_path, 'rb'))
+
+        os.remove(audio_path)
+        os.remove(video_path)
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Xatolik yuz berdi: {str(e)}")
-
-    finally:
-        # Fayllarni o‘chirish
-        if os.path.exists("audio.mp3"):
-            os.remove("audio.mp3")
-        if os.path.exists("video.mp4"):
-            os.remove("video.mp4")
+        await update.message.reply_text("Kechirasiz, yuklab olishda xatolik yuz berdi.")
 
 # Botni ishga tushirish
 async def main():
@@ -65,14 +60,15 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_media))
 
-    print("✅ Bot ishga tushdi!")
+    print("Bot ishga tushdi!")
     await application.run_polling()
 
 # Asinxron kodni to‘g‘ri ishga tushirish
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        loop = asyncio.get_running_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
+
+    loop.run_until_complete(main())
