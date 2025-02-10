@@ -62,14 +62,18 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 # Asinxron botni ishga tushirish
 async def main():
-    application = ApplicationBuilder().token("1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc").build()
+    application = ApplicationBuilder().token("YOUR_BOT_TOKEN").build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_media))
 
     print("Bot ishga tushdi!")
+    await application.initialize()
     await application.run_polling()
+    await application.shutdown()
 
 if __name__ == '__main__':
-    asyncio.run(main())  # ✅ Asinxron ishga tushirish
+    loop = asyncio.get_event_loop()  # Joriy event loopni olish
+    loop.create_task(main())  # Asinxron funksiya uchun yangi task yaratish
+    loop.run_forever()  # Event loopni doimiy ishlashga majbur qilish
 
