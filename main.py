@@ -1,43 +1,47 @@
-import os
-import logging
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from pytube import YouTube
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+import yt_dlp
 
-# Railway Environment Variables dan TOKEN ni olish
-TOKEN = os.getenv("TOKEN")
+# Start komandasi uchun handler
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "Assalomu alaykum! Men sizga qo'shiqni topib berishga yordam beraman. "
+        "Iltimos, qidirayotgan qo'shiq nomini yozing."
+    )
 
-# Bot va dispatcher obyektlarini yaratamiz
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+# Qo'shiq nomini qidirish va manzilni qaytarish
+async def find_song(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.message.text
+    await update.message.reply_text(f"\"{query}\" qo'shig'ini qidiryapman...")
 
-# Logging sozlamalari
-logging.basicConfig(level=logging.INFO)
+    # YouTube-dan qidirish va yuklab olish uchun
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'noplaylist': True,
+        'quiet': True,
+        'default_search': 'ytsearch',
+    }
 
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await message.reply("Salom! YouTube videolarini yuklab beruvchi bot. Menga YouTube link yuboring.")
-
-@dp.message_handler()
-async def download_video(message: types.Message):
-    url = message.text
     try:
-        await message.reply("⏳ Video yuklanmoqda, biroz kuting...")
-        yt = YouTube(url)
-        video = yt.streams.filter(progressive=True, file_extension="mp4").first()
-        file_path = video.download()
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            result = ydl.extract_info(query, download=False)
+            if 'entries' in result:
+                result = result['entries'][0]  # Birinchi natijani olamiz
+            download_url = result['url']
+            title = result['title']
 
-        # Telegramga yuklash
-        with open(file_path, "rb") as video_file:
-            await bot.send_video(message.chat.id, video_file, caption=f"{yt.title}\n\n@YourBotUsername")
-
-        # Faylni o‘chiramiz
-        os.remove(file_path)
+            await update.message.reply_text(
+                f"Qo'shiq topildi: {title}\nMana yuklab olish uchun havola: {download_url}"
+            )
     except Exception as e:
-        await message.reply(f"Xatolik yuz berdi: {e}")
+        await update.message.reply_text("Kechirasiz, qo'shiqni topishda xatolik yuz berdi.")
 
-async def main():
-    await dp.start_polling(bot)
+# Botni ishga tushirish
+if name == 'main':
+    application = ApplicationBuilder().token("1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc").build()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, find_song))
+
+    print("Bot ishga tushdi!")
+    application.run_polling()
