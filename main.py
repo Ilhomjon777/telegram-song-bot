@@ -37,11 +37,12 @@ async def find_song(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Kechirasiz, qo'shiqni topishda xatolik yuz berdi.")
 
 # Botni ishga tushirish
-if name == 'main':
-    application = ApplicationBuilder().token("1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc").build()
+if __name__ == '__main__':  # ✅ To‘g‘ri yozilgan
+    application = ApplicationBuilder().token("TOKENINGIZNI_KIRITING").build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, find_song))
 
     print("Bot ishga tushdi!")
     application.run_polling()
+
