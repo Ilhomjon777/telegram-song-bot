@@ -62,7 +62,7 @@ async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 # Asinxron botni ishga tushirish
 async def main():
-    application = ApplicationBuilder().token("SIZNING_BOT_TOKENINGIZ").build()
+    application = ApplicationBuilder().token("1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc").build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_media))
