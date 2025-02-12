@@ -1,8 +1,8 @@
 import os
 import logging
+import yt_dlp
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
-from pytube import Search, YouTube
 
 # Logging sozlamalari
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -19,24 +19,23 @@ async def search_video(update: Update, context: CallbackContext) -> None:
 
     try:
         # YouTube'da qidirish
-        search = Search(query)
-        if not search.results:
+        ydl_opts = {
+            'quiet': True,
+            'default_search': 'ytsearch1',  # 1 ta natija qaytaradi
+            'noplaylist': True
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(query, download=False)
+
+        if 'entries' not in info or len(info['entries']) == 0:
             await update.message.reply_text("Kechirasiz, video topilmadi.")
             return
 
-        video_url = search.results[0].watch_url
-        yt = YouTube(video_url)
+        video_url = info['entries'][0]['url']  # Topilgan video URL
+        video_title = info['entries'][0]['title']
 
-        # Videoni yuklab olish
-        video = yt.streams.filter(progressive=True, file_extension='mp4').first()
-        file_path = "video.mp4"
-        video.download(filename=file_path)
-
-        # Videoni Telegramga yuborish
-        await update.message.reply_video(video=open(file_path, 'rb'))
-
-        # Yuklangan faylni o‘chirish
-        os.remove(file_path)
+        await update.message.reply_text(f"✅ Video topildi: {video_title}\n{video_url}")
 
     except Exception as e:
         logger.error(f"Xatolik yuz berdi: {e}")
@@ -64,4 +63,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
