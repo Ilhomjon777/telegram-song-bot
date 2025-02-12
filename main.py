@@ -49,7 +49,7 @@ async def error(update: Update, context: CallbackContext) -> None:
 # Asosiy funksiya
 def main() -> None:
     # Telegram bot tokeni
-    token = "8100475091:AAHczc0rGkOBEBkm7iqMP7Espv11J4ZAxFA"
+    token = "8164698280:AAE06xC_aS-quAU-ObB-UEJaC3oT4hagtcI"
 
     # Bot uchun Application yaratish
     app = Application.builder().token(token).build()
