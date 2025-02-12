@@ -1,7 +1,7 @@
 import os
 import logging
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
 from pytube import YouTube
 import requests
 
@@ -50,7 +50,7 @@ def main() -> None:
 
     # CommandHandler va MessageHandler
     dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, search_video))
+    dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_video))
 
     # Xatolikni qaytarish
     dispatcher.add_error_handler(error)
