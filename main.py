@@ -1,55 +1,63 @@
 import os
-import yt_dlp
+import logging
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from pytube import YouTube
+import requests
 
-# Telegram bot token
-TOKEN = "1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc"
+# Logging sozlamalari
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Start komandasi uchun handler
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        "Assalomu alaykum! YouTube'dan video yuklab olish uchun link yuboring."
-    )
+# /start komandasi
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text('Salom! Men qo\'shiq nomini qabul qilaman va YouTube\'dan videoni topib beraman. Qo\'shiq nomini yuboring.')
 
-# YouTube videoni yuklab olish
-async def download_video(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    url = update.message.text
-    await update.message.reply_text(f"Video yuklab olinmoqda: {url}")
-
-    video_opts = {
-        'format': 'bestvideo+bestaudio/best',
-        'outtmpl': 'video.%(ext)s',
-        'noplaylist': True,
-        'quiet': True,
-    }
+# Qo'shiq nomini qabul qilish va videoni qidirish
+def search_video(update: Update, context: CallbackContext) -> None:
+    query = update.message.text
+    update.message.reply_text(f'Sizning so\'rovingiz: {query}. Qidirilmoqda...')
 
     try:
-        with yt_dlp.YoutubeDL(video_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            video_filename = ydl.prepare_filename(info)
+        # YouTube'dan videoni qidirish
+        yt = YouTube(f"https://www.youtube.com/results?search_query={query}")
+        video_url = yt.watch_url
 
-        # Agar fayl juda katta bo'lsa, yuborishdan oldin tekshiramiz
-        if os.path.getsize(video_filename) > 50 * 1024 * 1024:
-            await update.message.reply_text("Kechirasiz, video hajmi Telegram cheklovidan oshib ketdi.")
-            os.remove(video_filename)
-            return
+        # Videoni yuklab olish
+        video = yt.streams.filter(progressive=True, file_extension='mp4').first()
+        video.download(filename='video.mp4')
 
-        # Videoni foydalanuvchiga yuborish
-        await update.message.reply_video(video=open(video_filename, 'rb'))
-
-        # Yuklangan faylni o‘chirish
-        os.remove(video_filename)
+        # Videoni Telegramga yuborish
+        update.message.reply_video(video=open('video.mp4', 'rb'))
+        os.remove('video.mp4')  # Faylni o'chirish
 
     except Exception as e:
-        await update.message.reply_text("Kechirasiz, video topishda yoki yuklab olishda xatolik yuz berdi.")
+        logger.error(f"Xatolik yuz berdi: {e}")
+        update.message.reply_text('Kechirasiz, videoni topa olmadim.')
 
-# Botni ishga tushirish
-if __name__ == "__main__":
-    application = ApplicationBuilder().token(TOKEN).build()
+# Xatolikni qaytarish
+def error(update: Update, context: CallbackContext) -> None:
+    logger.warning(f'Update {update} caused error {context.error}')
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, download_video))
+# Asosiy funksiya
+def main() -> None:
+    # Telegram bot tokeni
+    token = "1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc"
 
-    print("Bot ishga tushdi!")
-    application.run_polling()
+    # Updater va Dispatcher
+    updater = Updater(token)
+    dispatcher = updater.dispatcher
+
+    # CommandHandler va MessageHandler
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, search_video))
+
+    # Xatolikni qaytarish
+    dispatcher.add_error_handler(error)
+
+    # Botni ishga tushirish
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
