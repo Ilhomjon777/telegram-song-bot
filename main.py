@@ -42,7 +42,7 @@ def error(update: Update, context: CallbackContext) -> None:
 # Asosiy funksiya
 def main() -> None:
     # Telegram bot tokeni
-    token = "1997127715:AAFk1qjeTNlV0zj8hrxIA8skIKZQuCkjKVc"
+    token = "8100475091:AAHczc0rGkOBEBkm7iqMP7Espv11J4ZAxFA"
 
     # Updater va Dispatcher
     updater = Updater(token)
